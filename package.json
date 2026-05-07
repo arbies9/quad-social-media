@@ -1,0 +1,12 @@
+{
+  "name": "quad",
+  "version": "0.1.0",
+  "description": "QUAD — Calendar-driven IRL friendship platform: Phase 0 matching prototype",
+  "private": true,
+  "scripts": {
+    "simulate": "node src/simulate.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
