@@ -4,7 +4,9 @@
   "description": "QUAD — Calendar-driven IRL friendship platform: Phase 0 matching prototype",
   "private": true,
   "scripts": {
-    "simulate": "node src/simulate.js"
+    "start": "node server.js",
+    "simulate": "node src/simulate.js",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=18"

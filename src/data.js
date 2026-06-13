@@ -4,10 +4,56 @@
 // Edit ACTIVITIES, RELIGIONS, PROFESSIONS, or the filter probability weights
 // below to stress-test liquidity — narrow filters collapse match counts fast.
 
-const ACTIVITIES = [
-  'running', 'brunch', 'hiking', 'coffee', 'dinner',
-  'pickleball', 'yoga', 'book club', 'trivia night', 'museum visit',
+const ACTIVITY_CATEGORIES = {
+  'Sports & Fitness': [
+    'running', 'hiking', 'yoga', 'cycling', 'swimming', 'rock climbing',
+    'tennis', 'pickleball', 'basketball', 'football', 'soccer', 'golf',
+    'boxing', 'martial arts', 'crossfit', 'skiing', 'pilates', 'volleyball',
+  ],
+  'Food & Drink': [
+    'brunch', 'coffee', 'dinner', 'cooking class', 'wine tasting',
+    'cocktail making', 'food tour', 'farmers market',
+  ],
+  'Arts & Culture': [
+    'museum visit', 'concert', 'theater', 'comedy show', 'book club',
+    'trivia night', 'art gallery', 'jazz bar', 'film night',
+  ],
+  'Gaming & Social': [
+    'video games', 'board games', 'poker night', 'escape room', 'bowling',
+    'karaoke',
+  ],
+  'Watch Parties': [
+    'NBA games', 'NFL games', 'soccer games', 'UFC nights', 'movie nights',
+  ],
+  Outdoors: [
+    'camping', 'beach day', 'picnic', 'kayaking', 'stargazing',
+    'paddle boarding',
+  ],
+  Creative: [
+    'photography', 'pottery', 'painting class', 'dance class',
+    'language exchange', 'chess', 'hackathon',
+  ],
+  Lifestyle: [
+    'thrifting', 'record shopping', 'volunteering', 'spa day',
+  ],
+};
+
+const ACTIVITIES = Object.values(ACTIVITY_CATEGORIES).flat();
+
+// Launch cohorts need density. Keep core wedge activities common, while still
+// letting long-tail interests appear often enough to stress-test breadth.
+const CORE_ACTIVITIES = [
+  'running', 'brunch', 'coffee', 'dinner', 'hiking',
+  'yoga', 'pickleball', 'book club', 'trivia night', 'museum visit',
 ];
+
+function activityWeight(activity) {
+  if (CORE_ACTIVITIES.includes(activity)) return 8;
+  if (ACTIVITY_CATEGORIES['Sports & Fitness'].includes(activity)) return 3;
+  if (ACTIVITY_CATEGORIES['Food & Drink'].includes(activity)) return 3;
+  if (ACTIVITY_CATEGORIES['Arts & Culture'].includes(activity)) return 3;
+  return 2;
+}
 
 const RELIGIONS  = ['Christian', 'Jewish', 'Muslim', 'Hindu', 'Buddhist', 'Agnostic'];
 const PROFESSIONS = ['tech', 'finance', 'medicine', 'law', 'creative', 'education', 'nonprofit'];
@@ -29,7 +75,23 @@ const BASE_LNG = -74.0060;
 function rand(arr)           { return arr[Math.floor(Math.random() * arr.length)]; }
 function randInt(min, max)   { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function randFloat(min, max) { return Math.random() * (max - min) + min; }
-function sample(arr, n)      { return [...arr].sort(() => Math.random() - 0.5).slice(0, Math.min(n, arr.length)); }
+
+function weightedActivitySample(n) {
+  const available = [...ACTIVITIES];
+  const selected = [];
+
+  while (selected.length < n && available.length > 0) {
+    const total = available.reduce((sum, activity) => sum + activityWeight(activity), 0);
+    let pick = randFloat(0, total);
+    const index = available.findIndex(activity => {
+      pick -= activityWeight(activity);
+      return pick <= 0;
+    });
+    selected.push(...available.splice(Math.max(0, index), 1));
+  }
+
+  return selected;
+}
 
 // ── availability ─────────────────────────────────────────────────────────────
 
@@ -93,7 +155,7 @@ function generateUsers(n = 60) {
 
   for (let i = 0; i < n; i++) {
     const schedule = rand(SCHEDULES);
-    const activities = sample(ACTIVITIES, randInt(2, 4));
+    const activities = weightedActivitySample(randInt(2, 4));
 
     const filters = activities.map(a => ({ kind: 'activity', value: a }));
     filters.push({ kind: 'schedule', value: schedule });
@@ -129,4 +191,10 @@ function generateUsers(n = 60) {
   return users;
 }
 
-module.exports = { generateUsers, ACTIVITIES, BLOCK_HOURS };
+module.exports = {
+  generateUsers,
+  ACTIVITIES,
+  ACTIVITY_CATEGORIES,
+  CORE_ACTIVITIES,
+  BLOCK_HOURS,
+};
